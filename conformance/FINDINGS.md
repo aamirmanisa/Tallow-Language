@@ -54,3 +54,19 @@ run on both planes.
 The string variant was the more dangerous of the two: the failing `strcmp` branched into
 the merge block while the PHI listed only the body block, so LLVM folded the guard away
 and the arm body ran unconditionally — a guard that silently stops guarding.
+
+## F-04 — printing a data-carrying enum (findings/04-print-data-enum.tl) — **OPEN**
+
+```
+interpreter: Pending("awaiting review")     exit 0
+native:      <0x01>                         exit 0
+```
+
+Unit variants agree on both planes — they print their discriminant (`0`, `1`, …).
+A variant with a payload does not: the native path prints a raw byte of the payload,
+so the output is a control character. The interpreter keeps the constructor form, which
+is the only shape that carries the payload.
+
+Status: open (engine register #125). Options: lower enum printing to a name table plus a
+payload formatter, or refuse to compile `print` of a data variant — a loud refusal is
+cheap, a correct rendering is feature work.
