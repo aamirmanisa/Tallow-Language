@@ -75,7 +75,7 @@ def main() -> int:
                 expect = {"kind": "runtime", "message": "non-exhaustive match"}
             else:
                 import re
-                m = re.search(r"(E\\d{4})", interp["stderr"])
+                m = re.search(r"(E\d{4})", interp["stderr"])
                 expect = {"kind": "reject", "code": m.group(1) if m else ""}
             meta_path.write_text(json.dumps(expect, indent=2) + "\n")
             print(f"refreshed {program.name}: {expect}")

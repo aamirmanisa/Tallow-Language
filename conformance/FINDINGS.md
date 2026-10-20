@@ -36,13 +36,21 @@ Function values and closures do not lower in the native backend; the build fails
 rather than silently calling 0, which is the right failure mode, but it means a language
 feature has no native implementation. Status: open (engine register #124).
 
-## F-03 — a non-exhaustive `match` yields `null` natively (findings/14-runtime-nonexhaustive.tl)
+## F-03 — non-exhaustive `match` (findings → now `cases/14`, `cases/15`) — **FIXED**
 
 ```
-interpreter: runtime error: non-exhaustive match (at 3:5)   exit 1
-native:      (null)                                         exit 0
+before:  interpreter  runtime error: non-exhaustive match   exit 1
+         native       (null)                                 exit 0
+
+         string subject, single arm:
+         native       "x" match { "a" -> "A" }  printed "A"  exit 0
 ```
 
-The interpreter rejects the program at runtime; the native plane silently produces a null
-value, which then prints as `(null)`. Silent-wrong-answer on a shipped binary is the worst
-class of divergence in this project's own rules. Status: open (engine register #123).
+The native plane invented a value. Both emitters now call a `noreturn` helper that
+reports `runtime error: non-exhaustive match` and exits 1, matching the interpreter
+(`tallowsphere` e79c4da, register #123). The two programs are now conformance cases and
+run on both planes.
+
+The string variant was the more dangerous of the two: the failing `strcmp` branched into
+the merge block while the PHI listed only the body block, so LLVM folded the guard away
+and the arm body ran unconditionally — a guard that silently stops guarding.
