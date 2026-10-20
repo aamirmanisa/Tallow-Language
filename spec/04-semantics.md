@@ -95,6 +95,11 @@ source order. A pattern may be:
 - a variant pattern `Ok(x)` / `Err(e)`;
 - a tuple pattern.
 
+A variant that carries a payload is the exception: it displays as `Variant(payload)` on the
+interpreter, and the reference native backend does not yet render it (see
+`conformance/FINDINGS.md`, F-04). Programs that print payload variants are therefore not
+portable to the native plane today.
+
 An enum value **is** its discriminant, everywhere: it prints as the integer, compares
 `==`/`!=` against integers, and matches integer literal patterns. The variant name is
 available only through variant patterns (`Color.Red`, or `Red` capitalised as a pattern),
