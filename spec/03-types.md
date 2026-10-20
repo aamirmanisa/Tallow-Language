@@ -75,10 +75,11 @@ type checker does not insert an implicit `Ok`.
 A function value has type `fn(T, U) -> R`. Closures are function values with captured
 environment; their type is the same `fn(...) -> R`.
 
-Portability note: the reference native backend does not represent function values. A call
-through a `fn(..)` binding is refused at compile time and the program runs on the
-interpreter (F-05 in `conformance/FINDINGS.md`); a closure defined and called in place
-does compile natively (F-06), but passing one across a function boundary does not.
+Portability note: the reference native backend represents a function value as one pointer
+called through the closure ABI `i64 (ptr env, args…)`, so a `fn(..)` binding is callable
+on both planes (F-05, fixed). What does not cross a call boundary is a *capturing*
+closure: its environment lives in the caller's frame and there is no slot for it in the
+value (F-07). Direct calls of a capturing closure do compile natively (F-06).
 
 A method declared in an `impl` block receives `self` as its first parameter and is called
 with dot syntax (`page.title`, `page.goto(url)`). A trait declares method signatures;

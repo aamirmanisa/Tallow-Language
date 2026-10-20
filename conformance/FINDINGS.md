@@ -69,22 +69,33 @@ variant and its payload natively (a name table plus a formatter) is future work.
 
 Status: refused (engine register #125, `tallowsphere` 35307b3).
 
-## F-05 — calling a function value (findings/05-fn-value-call.tl) — **REFUSED LOUDLY**
+## F-05 — calling a function value — **FIXED** (now `cases/18-fn-value-call.tl`)
 
 ```
 before:  interpreter  42
          native        2   exit 0     (called a symbol that does not exist)
-now:     tallow run              42
-         --require-native      exit 1, "cannot call a function value natively …"
+after:   both planes   42
+
+fn apply(f: fn(i64, i64) -> i64, a: i64, b: i64) -> i64 { f(a, b) }
+print(apply(add, 2, 40))
 ```
 
-A call through a `fn(..)`-typed binding is an indirect call, and the native backend has
-no function-value representation. It used to emit `call @f` for the parameter name and
-return a wrong number; it now refuses, so plain `tallow run` falls back to the
-interpreter. Indirect-call lowering remains future work (engine register #124/#126).
+A function value is a pointer called through the closure ABI `i64 (ptr env, args…)`;
+named functions get a thunk, non-capturing closures already had that signature, and a
+`let` binding inherits the signature from its initialiser. Engine `f036b73` (#124).
 
-## F-06 — a closure called in place works natively (findings/06-closure-direct-call.tl)
+## F-07 — a capturing closure across a call boundary — **REFUSED LOUDLY**
 
-`let double = { x: i64 -> x * 2 }; print(double(21))` prints `42` on both planes. What
-does not work natively is passing a closure across a function boundary (F-05) — the
-backend cannot thread the captured environment through a call, and refuses loudly.
+```
+fn apply(f: fn(i64) -> i64, x: i64) -> i64 { f(x) }
+let triple = 3
+print(apply({ y -> y * triple }, 14))
+
+  --require-native  exit 1, "passes a capturing closure (captures 'triple') …"
+  tallow run        42            (interpreter)
+```
+
+A function value carries no environment, and the captured variable lives in the caller's
+frame. Direct calls of a capturing closure do work natively
+(`let g = { x -> x * n }; g(14)` → 42); only crossing a boundary refuses. Closing it
+needs a `{fn, env}` value and a heap environment — engine row #127.
