@@ -68,3 +68,23 @@ native backend now refuses that print, so no garbage reaches stdout; rendering t
 variant and its payload natively (a name table plus a formatter) is future work.
 
 Status: refused (engine register #125, `tallowsphere` 35307b3).
+
+## F-05 — calling a function value (findings/05-fn-value-call.tl) — **REFUSED LOUDLY**
+
+```
+before:  interpreter  42
+         native        2   exit 0     (called a symbol that does not exist)
+now:     tallow run              42
+         --require-native      exit 1, "cannot call a function value natively …"
+```
+
+A call through a `fn(..)`-typed binding is an indirect call, and the native backend has
+no function-value representation. It used to emit `call @f` for the parameter name and
+return a wrong number; it now refuses, so plain `tallow run` falls back to the
+interpreter. Indirect-call lowering remains future work (engine register #124/#126).
+
+## F-06 — a closure called in place works natively (findings/06-closure-direct-call.tl)
+
+`let double = { x: i64 -> x * 2 }; print(double(21))` prints `42` on both planes. What
+does not work natively is passing a closure across a function boundary (F-05) — the
+backend cannot thread the captured environment through a call, and refuses loudly.
