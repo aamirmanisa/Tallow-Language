@@ -75,6 +75,11 @@ type checker does not insert an implicit `Ok`.
 A function value has type `fn(T, U) -> R`. Closures are function values with captured
 environment; their type is the same `fn(...) -> R`.
 
+Portability note: the reference native backend does not represent function values. A call
+through a `fn(..)` binding is refused at compile time and the program runs on the
+interpreter (F-05 in `conformance/FINDINGS.md`); a closure defined and called in place
+does compile natively (F-06), but passing one across a function boundary does not.
+
 A method declared in an `impl` block receives `self` as its first parameter and is called
 with dot syntax (`page.title`, `page.goto(url)`). A trait declares method signatures;
 `impl Trait for Type` must provide every non-default method or the program is rejected
