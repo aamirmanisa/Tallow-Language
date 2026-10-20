@@ -52,18 +52,19 @@ The string variant was the more dangerous of the two: the failing `strcmp` branc
 the merge block while the PHI listed only the body block, so LLVM folded the guard away
 and the arm body ran unconditionally — a guard that silently stops guarding.
 
-## F-04 — printing a data-carrying enum (findings/04-print-data-enum.tl) — **OPEN**
+## F-04 — printing a data-carrying enum (findings/04-print-data-enum.tl) — **REFUSED LOUDLY**
 
 ```
-interpreter: Pending("awaiting review")     exit 0
-native:      <0x01>                         exit 0
+before:  interpreter  Pending("awaiting review")
+         native       <0x01>                              (a control byte)
+now:     tallow run               Pending("awaiting review")   (interpreter fallback)
+         --require-native        exit 1, "cannot print a data-carrying enum natively:
+                                 it is a tagged struct, not a string …"
 ```
 
-Unit variants agree on both planes — they print their discriminant (`0`, `1`, …).
-A variant with a payload does not: the native path prints a raw byte of the payload,
-so the output is a control character. The interpreter keeps the constructor form, which
-is the only shape that carries the payload.
+Unit variants agree on both planes — they print their discriminant. A variant with a
+payload is a tagged struct natively, and the string printer used to walk its tag. The
+native backend now refuses that print, so no garbage reaches stdout; rendering the
+variant and its payload natively (a name table plus a formatter) is future work.
 
-Status: open (engine register #125). Options: lower enum printing to a name table plus a
-payload formatter, or refuse to compile `print` of a data variant — a loud refusal is
-cheap, a correct rendering is feature work.
+Status: refused (engine register #125, `tallowsphere` 35307b3).
