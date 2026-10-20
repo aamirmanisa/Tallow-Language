@@ -11,20 +11,17 @@ tallow run --interpret        findings/<file>.tl
 tallow run --require-native   findings/<file>.tl
 ```
 
-## F-01 — truthiness of `""` and `[]` (findings/03-truthiness.tl)
+## F-01 — truthiness of `""` and `[]` — **FIXED** (now `cases/17-truthiness.tl`)
 
-| program | interpreter | native |
-|---|---|---|
-| `if 0` | F | F |
-| `if ""` | **F** | **T** |
-| `if nil` | F | F |
-| `if []` | **F** | **T** |
-| `if 1` | T | T |
-| `if "x"` | T | T |
+```
+before:  interpreter  F F F F T T
+         native       F T F T T T      ("" and [] were truthy)
+after:   both planes  F F F F T T
+```
 
-The interpreter tests emptiness; the native plane tests only non-nullness. §4.2 of the
-specification says empty string and empty slice are falsy — so the **native plane is the
-defect**. Status: open (engine register #122).
+Native tested pointer non-nullness. Conditions now dispatch on the expression
+(`truthy_of`): arrays by count, strings by first byte, other pointers by non-nullness
+(`tallowsphere` c1c1e1c-class change, register #122).
 
 ## F-02 — closures are interpreter-only (findings/08-closures.tl)
 
