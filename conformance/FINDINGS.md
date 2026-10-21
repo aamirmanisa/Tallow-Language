@@ -102,7 +102,7 @@ after #127: both planes print 42
 A function value is now a `{code, env}` pair and the environment is heap-allocated, so a
 capturing closure crosses a call boundary. Pinned as `cases/19-closures-capture.tl`.
 
-## F-08 — a dropped `Result` is discarded silently — **OPEN**
+## F-08 — a dropped `Result` is discarded silently — **FIXED** (#133)
 
 ```
 fn bad() -> Result<i64> { bail "boom" }
@@ -112,19 +112,17 @@ fn main() { bad(); print("after") }
   let r = bad() "after", exit 0 — and `tallow check` reports 0 warnings
 ```
 
-The codegen comment on the void-return path says a dropped `Err` "must not read as
-success: fail loudly (stderr + exit 1)", so the engine contradicts its own stated intent.
-Not a suite case: the suite requires both planes to agree, and they agree on the wrong
-answer. Engine register #133.
+Both planes now exit 1 with the message on stderr and stdout empty, and an `Ok` still
+continues. Pinned by `tests/optional_match_unwrap.rs` in the engine.
 
-## F-09 — an optional cannot be unwrapped natively — **OPEN**
+## F-09 — an optional cannot be unwrapped natively — **FIXED** (#134)
 
 ```
 let v = div(8, 2) ?? 0                      type error, both planes
 div(9, 3) match { Some(x) -> x None -> 0 }   codegen: "unsupported subject shape"
 ```
 
-Producing, printing and testing (`== nil`) a `T?` work on both planes, and implicit
-wrapping into an optional was fixed on 2026-10-21 (#135). What is missing is the read
-side. Related: `let v: i64 = src(0)` passes `tallow check` although neither plane can run
-it (#136). Engine register #134 / #136.
+`match` on a `T?` now compiles: `Some(x)` binds the payload with its declared type,
+`None` takes the absent branch, and both planes agree. There is no `??` operator in the
+language at all — the earlier text in this file named one that never existed. Binding a
+`T?` to a `T` is rejected with `E0116` (#136).

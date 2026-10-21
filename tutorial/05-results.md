@@ -33,11 +33,15 @@ Err("not positive")
 Printing a `Result` shows which arm it is — it never prints a bare `5` that could
 be mistaken for success.
 
-One honest caveat, measured on both planes: a `Result` that is evaluated and not
-matched is **discarded silently today** — `bad()` on its own line neither prints
-nor changes the exit status, and `tallow check` emits no warning. Until that is
-closed (it is tracked as a defect, not a feature), always `match` a `Result` or
-bind it.
+Dropping a failure is not silent. A `Result` evaluated as a statement and
+discarded is checked at run time: an `Err` writes its message to **stderr** and
+exits **1**, an `Ok` continues normally. So both of these end the program with a
+non-zero status and nothing on stdout:
+
+```tallow
+fn bad() -> Result<i64> { bail "boom" }
+fn main() { bad() print("never printed") }
+```
 
 Next: read the [specification](../spec/00-preface.md) for the rules behind these
 programs, or the [conformance suite](../conformance/) for the cases that pin them

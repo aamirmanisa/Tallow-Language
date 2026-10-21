@@ -1,11 +1,7 @@
 // Optionals: a function that can fail to produce a value says so — `i64?`.
 //
-// What works on both planes today: producing the optional (`return nil` or a
-// value), printing it, and testing it with `== nil`. What does NOT compile
-// natively yet is unwrapping it: `match` on an optional and `??` are refused
-// (register #134), so this example tests presence instead of pretending to
-// unwrap. `--require-native` refuses rather than silently running the
-// interpreter, which is why the gap is visible here instead of hidden.
+// `match` is the only unwrap the language has: `Some(x)` binds the value,
+// `None` takes the absent branch. Both arms must produce the same type.
 fn divide(a: i64, b: i64) -> i64? {
     if b == 0 { return nil }
     return a / b
@@ -13,7 +9,17 @@ fn divide(a: i64, b: i64) -> i64? {
 
 fn main() {
     print(divide(10, 2))
-    print(divide(1, 0))
     print(divide(1, 0) == nil)
-    print(divide(10, 2) == nil)
+
+    let half = divide(10, 2) match {
+        Some(x) -> x
+        None -> 0 - 1
+    }
+    print(half)
+
+    let missing = divide(1, 0) match {
+        Some(x) -> x
+        None -> 0 - 1
+    }
+    print(missing)
 }

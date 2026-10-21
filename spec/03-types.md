@@ -51,10 +51,26 @@ Slices are the only sequence type; there is no fixed-size array type. `[]T` may 
 - `x == nil` and `x != nil` are always legal on an optional and are the only comparisons
   that do not require unwrapping.
 - Printing an optional prints the payload (`5`) or `nil`.
-- Using an optional where a `T` is required is a type error. In particular **arithmetic on
-  an optional is rejected**: `r.elapsed_ms + 1` with `elapsed_ms: i64?` is
-  `E0110 left operand of + must be numeric, got i64?`. Unwrap first (`match`, `if let`, or
-  the `?` operator inside a function that returns an optional).
+- A `T` flows into a `T?` slot implicitly: `let x: i64? = 3`, `return n` from a
+  `-> i64?` function, and an `i64` argument to an `i64?` parameter all wrap.
+- The reverse is not implicit. A `T?` bound or assigned to a `T` is
+  `E0116` ("cannot bind `T?` to a `T` without a check"). **Arithmetic on an optional is
+  rejected** as well: `r.elapsed_ms + 1` with `elapsed_ms: i64?` is
+  `E0110 left operand of + must be numeric, got i64?`.
+- Unwrap with `match`:
+
+  ```tallow
+  let half = div(10, 2) match {
+      Some(x) -> x
+      None -> 0 - 1
+  }
+  ```
+
+  `Some(x)` binds the payload with the element type, `None` takes the absent branch; both
+  arms must produce the same type. A `match` that has a `Some` arm and no `None` or
+  wildcard arm exits 1 when the value is absent. `if let` covers the single-arm form.
+- The `?` operator is for `Result`, not for optionals, and the language has no
+  nil-coalescing operator: `match` (or `if let`) is the read side.
 
 ## 3.4 Results
 

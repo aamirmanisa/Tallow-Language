@@ -20,7 +20,8 @@ Eight item kinds exist: `Fn`, `Struct`, `Enum`, `Impl`, `Trait`, `Const`, `TypeA
 compile error rather than an annotation that is silently ignored.
 
 ```
-FnDecl       = "fn" Ident "(" [ Param { "," Param } ] ")" [ "->" Type ] Block ;
+FnDecl       = [ "native" ] "fn" Ident "(" [ Param { "," Param } ] ")" [ "->" Type ]
+               ( Block | /* native: no body */ ) ;
 Param        = Ident ":" Type | "self" [ "," ] ;
 StructDecl   = "struct" Ident "{" { Ident ":" Type "," } "}" ;
 EnumDecl     = "enum" Ident "{" Ident { "," Ident } "}" ;
@@ -30,6 +31,12 @@ ConstDecl    = "const" Ident ":" Type "=" Expr ;
 TypeAlias    = "type" Ident "=" Type ;
 ImportDecl   = "import" String ;
 ```
+
+A `native fn` declaration has no body: its implementation is a symbol of the same name
+supplied at link time (`native fn tallow_string_free(s: String)`), so calls bind to that
+symbol with no name mangling. The modifier is only a modifier when followed by `fn`, so a
+function named `native` still parses. The interpreter has nothing to execute for such a
+call and refuses it by name; compile the program instead.
 
 Enums are integer-backed: a variant is a named discriminant, and a `match` on an enum
 compares against integer patterns (this is why `examples/enums.tl` matches `Color` values
