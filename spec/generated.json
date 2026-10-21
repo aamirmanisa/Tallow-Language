@@ -1,9 +1,9 @@
 {
-  "engine_sha": "39f203b",
+  "engine_sha": "3680a3c",
   "generated": "2026-10-21",
   "keywords": 36,
   "tokens": 51,
-  "error_codes": 175,
+  "error_codes": 176,
   "stdlib_modules": 85,
   "stdlib_fns": 1118
 }

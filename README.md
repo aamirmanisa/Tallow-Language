@@ -95,7 +95,7 @@ ok   tutorial/programs/01-hello.tl
 | [05 · Errors](spec/05-errors.md) | The error model and the code catalogue |
 | [06 · Standard library](spec/06-stdlib.md) | Declared surface and contracts |
 
-The error catalogue is enumerated, not illustrative: **175 distinct `E…` codes** [measured 2026-10-21]. A diagnostic you cannot look up is a diagnostic you cannot fix.
+The error catalogue is enumerated, not illustrative: **176 distinct `E…` codes** [measured 2026-10-21]. A diagnostic you cannot look up is a diagnostic you cannot fix.
 
 **3 · Verify an implementation.** The conformance suite is the arbiter:
 
