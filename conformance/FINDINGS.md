@@ -84,7 +84,7 @@ A function value is a pointer called through the closure ABI `i64 (ptr env, args
 named functions get a thunk, non-capturing closures already had that signature, and a
 `let` binding inherits the signature from its initialiser. Engine `f036b73` (#124).
 
-## F-07 — a capturing closure across a call boundary — **REFUSED LOUDLY**
+## F-07 — a capturing closure across a call boundary — **FIXED** (#127, case 19)
 
 ```
 fn apply(f: fn(i64) -> i64, x: i64) -> i64 { f(x) }
@@ -95,7 +95,36 @@ print(apply({ y -> y * triple }, 14))
   tallow run        42            (interpreter)
 ```
 
-A function value carries no environment, and the captured variable lives in the caller's
-frame. Direct calls of a capturing closure do work natively
-(`let g = { x -> x * n }; g(14)` → 42); only crossing a boundary refuses. Closing it
-needs a `{fn, env}` value and a heap environment — engine row #127.
+```
+after #127: both planes print 42
+```
+
+A function value is now a `{code, env}` pair and the environment is heap-allocated, so a
+capturing closure crosses a call boundary. Pinned as `cases/19-closures-capture.tl`.
+
+## F-08 — a dropped `Result` is discarded silently — **OPEN**
+
+```
+fn bad() -> Result<i64> { bail "boom" }
+fn main() { bad(); print("after") }
+
+  both planes   "after", exit 0
+  let r = bad() "after", exit 0 — and `tallow check` reports 0 warnings
+```
+
+The codegen comment on the void-return path says a dropped `Err` "must not read as
+success: fail loudly (stderr + exit 1)", so the engine contradicts its own stated intent.
+Not a suite case: the suite requires both planes to agree, and they agree on the wrong
+answer. Engine register #133.
+
+## F-09 — an optional cannot be unwrapped natively — **OPEN**
+
+```
+let v = div(8, 2) ?? 0                      type error, both planes
+div(9, 3) match { Some(x) -> x None -> 0 }   codegen: "unsupported subject shape"
+```
+
+Producing, printing and testing (`== nil`) a `T?` work on both planes, and implicit
+wrapping into an optional was fixed on 2026-10-21 (#135). What is missing is the read
+side. Related: `let v: i64 = src(0)` passes `tallow check` although neither plane can run
+it (#136). Engine register #134 / #136.

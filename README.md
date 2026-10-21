@@ -55,8 +55,28 @@ python3 conformance/run.py --tallow /path/to/tallow
 ```
 
 Every case is a `.tl` program plus the exact stdout and exit status the reference engine
-produced. Cases are regenerated — never hand-edited — by `tools/generate.py`, and CI runs
-the suite against the pinned engine release.
+produced. Expectations are recorded, never hand-edited:
+
+```sh
+python3 conformance/run.py --tallow /path/to/tallow --refresh
+```
+
+`--refresh` refuses to record a case whose two planes disagree, so a case can only encode
+behaviour the interpreter and the compiler share. CI runs the suite against the packaged
+binary.
+
+## Tutorial
+
+`tutorial/01-hello.md` … `05-results.md` build the language up in five steps. Every
+chapter's program is also a standalone file, and the claim "each chapter runs" is checked
+rather than asserted:
+
+```sh
+./tutorial/run-all.sh /path/to/tallow
+```
+
+The script runs each program on both planes and fails if either refuses or if their output
+differs. `examples/` is under the same gate.
 
 ## Repository layout
 
