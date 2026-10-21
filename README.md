@@ -22,8 +22,36 @@ curl -fsSL https://raw.githubusercontent.com/aamirmanisa/Tallow-Language/main/in
 tallow --version
 ```
 
-No release has been published yet; `install.sh` explains what it looked for and exits
-non-zero rather than installing something unverified.
+The installer resolves the latest published release of
+[tallowsphere](https://github.com/aamirmanisa/tallowsphere/releases), downloads the
+archive for your platform, verifies its sha256, and installs **both** `tallow` and
+`libtallow.a` — the compiler alone cannot link the programs it builds.
+
+Linux on `aarch64` is the platform with a published build today. On other platforms
+`install.sh` names the asset it looked for and exits rather than installing something
+unverified; build from source in the meantime.
+
+## Scripts
+
+A `.tl` file is a program you can execute directly:
+
+```tallow
+#!/usr/bin/env tallow
+fn main() {
+    let path = env.args()[0]
+    let text = fs.read_file(path)
+    print(text.split("\n").len().to_string() + " lines in " + path)
+}
+```
+
+```sh
+$ chmod +x count.tl && ./count.tl notes.txt
+42 lines in notes.txt
+```
+
+`examples/scripts/` carries two complete ones — `wc.tl` and `todo.tl` — and
+[tutorial/06-scripts.md](tutorial/06-scripts.md) covers arguments, exit codes and the
+shebang rules.
 
 ## The two repositories
 

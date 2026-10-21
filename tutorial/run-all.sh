@@ -49,5 +49,26 @@ for f in "$root"/tutorial/programs/*.tl "$root"/examples/*.tl; do
     run_one "$f"
 done
 
+# Scripts take arguments, so they get a fixture instead of a bare run. The
+# fixture deliberately contains no TODO/FIXME: todo.tl exits 1 when it finds
+# one, and that exit code is checked separately in 06-scripts.md.
+if compgen -G "$root/examples/scripts/*.tl" > /dev/null; then
+    fix="$(mktemp -d)"
+    printf 'alpha beta\ngamma\n' > "$fix/input.txt"
+    for f in "$root"/examples/scripts/*.tl; do
+        native="$("$TALLOW" run --require-native "$f" -- "$fix/input.txt" 2>"$fix/nerr")"; nrc=$?
+        interp="$("$TALLOW" run --interpret "$f" -- "$fix/input.txt" 2>/dev/null | sed '/^\* /d')"; irc=${PIPESTATUS[0]}
+        ran=$((ran + 1))
+        if [ $nrc -ne 0 ] || [ $irc -ne 0 ] || [ "$native" != "$interp" ]; then
+            printf 'FAIL %s\n  native rc=%d interp rc=%d\n%s\n' \
+                "${f#$root/}" "$nrc" "$irc" "$(sed 's/^/    /' "$fix/nerr")"
+            fail=$((fail + 1))
+        else
+            printf 'ok   %s (with a file argument)\n' "${f#$root/}"
+        fi
+    done
+    rm -rf "$fix"
+fi
+
 printf '\n%d program(s), %d failure(s)\n' "$ran" "$fail"
 [ "$fail" -eq 0 ]
