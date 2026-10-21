@@ -76,33 +76,155 @@ def error_codes(engine: Path) -> list[tuple[str, str]]:
     return sorted(seen.items())
 
 
+def clean_comment(body: str) -> str:
+    """Normalise one comment line: drop box-drawing rules, collapse whitespace."""
+    return re.sub(r"\s+", " ", body.replace("─", " ")).strip()
+
+
+def logical_lines(text: str) -> list[str]:
+    """Join declarations whose parameter list spans several lines.
+
+    A signature broken across lines is still one declaration; feeding the parser
+    line-by-line dropped five of them (cookie_jar, oauth ×3, session) because the
+    opening line has no closing paren.
+    """
+    out: list[str] = []
+    buf: list[str] | None = None
+    for line in text.splitlines():
+        s = line.strip()
+        if buf is not None:
+            buf.append(s)
+            joined = " ".join(buf)
+            if joined.count("(") <= joined.count(")"):
+                out.append(joined)
+                buf = None
+            continue
+        if re.match(r"(?:native\s+)?fn\s+", s) and s.count("(") > s.count(")"):
+            buf = [s]
+            continue
+        out.append(line)
+    if buf:
+        out.append(" ".join(buf))
+    return out
+
+
 def stdlib(engine: Path) -> list[dict]:
+    """Parse the `.tl` stdlib surface.
+
+    The surface is declarations only: free functions, `struct` types with their
+    doc comments, and methods inside `impl` blocks. The previous parser required
+    a declaration to be the last thing on its line, so every `fn f() -> T {`
+    written with its brace on the same line was silently dropped — 810 of 1,337
+    declarations reached the spec. Braces are tolerated here, and `impl` bodies
+    are attributed to their type instead of being flattened into the module.
+    """
     mods = []
     for path in sorted(glob.glob(str(engine / "stdlib/*.tl"))):
         text = Path(path).read_text()
-        doc: list[str] = []
         module = Path(path).stem
-        fns = []
+        mod_doc: list[str] = []
         pending: list[str] = []
-        for line in text.splitlines():
+        fns: list[dict] = []
+        types: list[dict] = []
+        impl: str | None = None
+        depth = 0
+        in_header = True
+        comment_prose: list[str] = []
+        # Declarations the scanner can see, independent of the parser. If the two
+        # counts disagree the index is silently missing functions, which is the
+        # failure this guard exists to make impossible to publish.
+        raw = sum(1 for l in text.splitlines()
+                  if re.match(r"\s*(?:native\s+)?fn\s+[A-Za-z_]\w*(?:\.[a-z_]\w*)?(?:<[^>]*>)?\s*\(", l))
+
+        for line in logical_lines(text):
             s = line.strip()
+
+            # Module header: the leading `//` block, before any declaration.
+            if in_header and s.startswith("//") and not s.startswith("///"):
+                body = clean_comment(s[2:].strip())
+                if body:
+                    mod_doc.append(body)
+                    comment_prose.append(body)
+                continue
+            if in_header and not s:
+                in_header = False
+                continue
+            if not s.startswith("//") and not s.startswith("///"):
+                in_header = False
+
             if s.startswith("///"):
                 pending.append(s[3:].strip())
                 continue
+            if s.startswith("//"):
+                body = clean_comment(s[2:].strip())
+                # `//` is also a doc comment on the declaration surfaces that were
+                # written before `///`; dividers (`// ───`) are not prose.
+                if body and not set(body) <= set("─-— "):
+                    pending.append(body)
+                    comment_prose.append(body)
+                continue
+            if not s:
+                pending = []
+                continue
+
             m = re.match(r"module\s+([\w.]+)", s)
             if m:
                 module = m.group(1)
-                doc = pending
                 pending = []
                 continue
-            m = re.match(r"(?:native\s+)?fn\s+([a-z_]\w*)\s*\((.*)\)\s*(?:->\s*(.+?))?\s*$", s)
+
+            m = re.match(r"struct\s+(\w+)", s)
             if m:
-                fns.append({"name": m.group(1), "sig": s.split("fn", 1)[1].strip(), "doc": " ".join(pending)})
+                types.append({"name": m.group(1), "doc": " ".join(pending)})
+                pending = []
+                depth += s.count("{") - s.count("}")
+                continue
+
+            m = re.match(r"impl\s+(?:<[^>]*>\s*)?(\w+)", s)
+            if m:
+                impl = m.group(1)
+                depth = s.count("{") - s.count("}")
                 pending = []
                 continue
-            if s and not s.startswith("//"):
+
+            m = re.match(r"(?:native\s+)?fn\s+([A-Za-z_]\w*)(?:\.([a-z_]\w*))?(?:<[^>]*>)?\s*\((.*?)\)\s*(?:->\s*([^{]+?))?\s*(?:\{.*)?$", s)
+            if m:
+                type_prefix, method = m.group(1), m.group(2)
+                if method:
+                    # `fn Extract.schema(…)` — a type-qualified declaration.
+                    name, owner = method, type_prefix
+                else:
+                    name, owner = type_prefix, impl
+                ret = (m.group(4) or "").strip()
+                sig = f"{name}({m.group(3)})" + (f" -> {ret}" if ret else "")
+                fns.append({
+                    "name": name,
+                    "sig": sig,
+                    "doc": " ".join(pending),
+                    "owner": owner,
+                })
                 pending = []
-        mods.append({"module": module, "doc": " ".join(doc), "fns": fns})
+                if impl is not None:
+                    # A method whose body opens on the same line owns that brace;
+                    # without this the body's closing `}` ended the impl block and
+                    # every following method was filed as a free function.
+                    depth += s.count("{") - s.count("}")
+                continue
+
+            if s == "}":
+                depth -= 1
+                if depth <= 0:
+                    impl, depth = None, 0
+                continue
+
+            if s and not s.startswith("#"):
+                pending = []
+
+        if not fns and not types and comment_prose:
+            # A module that declares nothing but documents its native surface in
+            # prose (forensics, osint) has no other place for that prose to live.
+            mod_doc = comment_prose
+        mods.append({"module": module, "doc": " ".join(mod_doc), "fns": fns, "types": types, "raw": raw})
     return mods
 
 
@@ -140,10 +262,15 @@ def write_errors(out: Path, sha: str, date: str, codes):
 
 
 def write_stdlib(out: Path, sha: str, date: str, mods):
-    total = sum(len(m["fns"]) for m in mods)
+    free = sum(1 for m in mods for f in m["fns"] if not f["owner"])
+    methods = sum(1 for m in mods for f in m["fns"] if f["owner"])
+    types = sum(len(m["types"]) for m in mods)
     lines = [HEADER.format(sha=sha, date=date), "# 6. Standard library index\n",
-             f"{len(mods)} modules, {total} functions. Signatures are the contract; behaviour notes are",
-             "the module's own documentation. I/O modules are engine surfaces — see the note in the README.\n",
+             f"{len(mods)} modules, {len(mods) and free + methods} declarations: {free} free functions, "
+             f"{methods} methods on {types} types. Signatures are the contract; behaviour notes are",
+             "the declaration's own documentation. I/O modules are engine surfaces — see the note in the README.\n",
+             "Every declaration in `stdlib/*.tl` appears here. The index is generated from those files, so",
+             "a function the spec does not list is a function the language does not have.\n",
              "## Modules\n"]
     for m in mods:
         lines.append(f"- [`{m['module']}`](#{m['module'].replace('.', '').replace('_', '-')}) — {m['doc'][:90]}")
@@ -152,16 +279,40 @@ def write_stdlib(out: Path, sha: str, date: str, mods):
         lines += ["", f'<a id="{slug}"></a>', f"## `{m['module']}`\n"]
         if m["doc"]:
             lines += [m["doc"], ""]
-        if not m["fns"]:
-            lines += ["_No functions declared._", ""]
-            continue
-        lines += ["```tallow"] + [f"fn {f['sig']}" for f in m["fns"]] + ["```", ""]
+
+        if m["types"]:
+            lines.append("### Types\n")
+            for t in m["types"]:
+                lines.append(f"- `{t['name']}`" + (f" — {t['doc']}" if t["doc"] else ""))
+            lines.append("")
+
+        free_fns = [f for f in m["fns"] if not f["owner"]]
+        if free_fns:
+            lines += ["### Functions\n", "```tallow"] + [f"fn {f['sig']}" for f in free_fns] + ["```", ""]
+            for f in free_fns:
+                if f["doc"]:
+                    lines.append(f"- `{f['name']}` — {f['doc']}")
+            lines.append("")
+
+        owners: list[str] = []
         for f in m["fns"]:
-            if f["doc"]:
-                lines.append(f"- `{f['name']}` — {f['doc']}")
-        lines.append("")
+            if f["owner"] and f["owner"] not in owners:
+                owners.append(f["owner"])
+        for owner in owners:
+            lines += [f"### `{owner}` methods\n", "```tallow"]
+            lines += [f"fn {f['sig']}" for f in m["fns"] if f["owner"] == owner]
+            lines += ["```", ""]
+            for f in m["fns"]:
+                if f["owner"] == owner and f["doc"]:
+                    lines.append(f"- `{f['name']}` — {f['doc']}")
+            lines.append("")
+
+        if not m["fns"] and not m["types"]:
+            note = ("_No declarations in the `.tl` surface — this module's native surface is documented"
+                    " in the prose above._" if m["doc"] else "_No declarations._")
+            lines += [note, ""]
     (out / "06-stdlib.md").write_text("\n".join(lines) + "\n")
-    return len(mods), total
+    return len(mods), free + methods
 
 
 def main():
@@ -178,6 +329,11 @@ def main():
     kws, toks = keywords(engine), tokens(engine)
     codes = error_codes(engine)
     mods = stdlib(engine)
+    parsed = sum(len(m["fns"]) for m in mods)
+    raw = sum(m["raw"] for m in mods)
+    if parsed != raw:
+        short = [f"{m['module']} ({len(m['fns'])}/{m['raw']})" for m in mods if len(m["fns"]) != m["raw"]]
+        raise SystemExit(f"stdlib index incomplete: parsed {parsed} of {raw} declarations — {', '.join(short)}")
     write_lexical(out, sha, date, kws, toks)
     n_codes = write_errors(out, sha, date, codes)
     n_mods, n_fns = write_stdlib(out, sha, date, mods)
