@@ -81,7 +81,7 @@ ok   tutorial/programs/01-hello.tl
 10 program(s), 0 failure(s)
 ```
 
-[measured 2026-10-22 · release 1.1.4 · both planes identical, 10 program(s), 0 failure(s)]
+[measured 2026-10-22 · release 1.1.5 · both planes identical, 10 program(s), 0 failure(s)]
 
 **2 · Check the details.** The specification is normative, in reading order:
 
