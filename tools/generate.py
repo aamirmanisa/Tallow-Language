@@ -55,7 +55,16 @@ def tokens(engine: Path) -> list[tuple[str, str]]:
             continue
         m = re.match(r"\s*([A-Z]\w*)(?:\([^)]*\))?,\s*//\s*(.+)$", line)
         if m and section in ("Operators", "Delimiters", "Punctuation"):
-            out.append((m.group(2).strip().rstrip("."), f"{m.group(1)} (`{section}`)"))
+            spelling = m.group(2).strip()
+            # Drop a trailing sentence period, not a dot *token*. `rstrip(".")`
+            # turned the comments `// .` and `// ..` into empty spellings, so the
+            # published table listed Dot and DotDot with a blank Spelling cell.
+            if spelling.endswith(".") and set(spelling) != {"."}:
+                spelling = spelling[:-1]
+            # `// _ (as pattern)` — the spelling is the first field; the rest is
+            # an explanation, not part of what the lexer accepts.
+            spelling = spelling.split(" (")[0].strip()
+            out.append((spelling, f"{m.group(1)} (`{section}`)"))
     return out
 
 

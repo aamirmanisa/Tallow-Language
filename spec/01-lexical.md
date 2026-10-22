@@ -91,8 +91,8 @@ cannot be used as identifiers. `_` is reserved as a pattern wildcard.
 | `&=` | AmpEq (`Operators`) |
 | `|=` | PipeEq (`Operators`) |
 | `^=` | CaretEq (`Operators`) |
-| `` | Dot (`Punctuation`) |
-| `` | DotDot (`Punctuation`) |
+| `.` | Dot (`Punctuation`) |
+| `..` | DotDot (`Punctuation`) |
 | `,` | Comma (`Punctuation`) |
 | `:` | Colon (`Punctuation`) |
 | `::` | ColonColon (`Punctuation`) |
@@ -102,7 +102,7 @@ cannot be used as identifiers. `_` is reserved as a pattern wildcard.
 | `?` | Question (`Punctuation`) |
 | `@` | At (`Punctuation`) |
 | `#` | Hash (`Punctuation`) |
-| `_ (as pattern)` | Underscore (`Punctuation`) |
+| `_` | Underscore (`Punctuation`) |
 
 ## 1.3 Literals
 
