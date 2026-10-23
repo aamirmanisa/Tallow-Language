@@ -46,17 +46,42 @@ against `0`, `1`, `2`).
 
 ```
 Type         = NamedType | GenericType | SliceType | OptionalType
-             | TupleType | FnType | BoxedType | ImplType | DynType ;
+             | TupleType | RecordType | FnType | BoxedType | ImplType | DynType ;
 NamedType    = Path ;
 GenericType  = Path "<" Type { "," Type } ">" ;
-SliceType    = "[" Type "]" ;
+SliceType    = "[" Type "]" | "[]" Type ;
 OptionalType = Type "?" ;
 TupleType    = "(" Type { "," Type } ")" ;
-FnType       = "fn" "(" [ Type { "," Type } ] ")" "->" Type ;
+RecordType   = "{" [ RecordField { "," RecordField } ] "}" ;
+RecordField  = Ident ":" Type ;
+FnType       = "fn" "(" [ Type { "," Type } ] ")" [ "->" Type ] ;
 BoxedType    = "Box" "<" Type ">" ;
 ImplType     = "impl" Ident ;
 DynType      = "dyn" Ident ;
 ```
+
+`[]T` and `[T]` are the same slice type; `T?` is optional. A `RecordType` is an
+anonymous inline shape — `{a: Int, b: String}` — used where naming a struct
+would add nothing (result shapes in declarations). It carries field names for
+readers; the type checker erases it to a tuple of its field types. `{T, U}` is
+the unnamed form.
+
+`FnType` without `->` means the function returns nothing (`fn()`), which is the
+parameter form used by callbacks that take no arguments and produce no value.
+
+### Contextual keywords in names
+
+Keywords are reserved where the grammar expects a construct, but a *name*
+position (`field: Type`, `fn name(...)`, parameter lists) accepts the reserved
+word as an identifier. This is what allows `type: String`, `return: Float` and
+`fn await(self)` — spellings that appear throughout the shipped stdlib and in
+ordinary API shapes. A keyword is never reinterpreted inside an expression.
+
+### Generic type aliases
+
+`type MetaPrivate<T> = private T` declares an alias with parameters; the
+parameters are accepted for documentation and erased — the alias denotes its
+target type.
 
 ## 2.3 Statements
 
