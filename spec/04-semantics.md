@@ -174,3 +174,18 @@ not tell a reader which edge to cut.
 `Mesh.run` is NOT part of this revision. Executing a plan requires a worker pool
 that runs Tallow functions, and no such executor is specified here yet; an
 implementation MUST NOT accept a program that calls it.
+
+## 4.13 Name resolution: variables shadow modules
+
+Standard-library modules are reachable by name (`math`, `http`, `llm`, `Mesh`), but
+a module name is **not** a reserved word. If a variable is in scope with that name,
+the variable wins:
+
+```
+let llm = h.llm_calls     // the field, not the module
+```
+
+An implementation MUST resolve a bound variable before resolving a module name.
+The reverse order silently rewrites ordinary programs — a local named `llm` reads
+back as the module sentinel rather than the value it was bound to — and no
+diagnostic is produced, because the identifier does resolve.
