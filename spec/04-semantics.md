@@ -142,3 +142,35 @@ signatures and their failure contract are specified — a call that cannot start
 returns an `Output` with `exit_code = -1` and the reason on stderr rather than aborting —
 but their internal behaviour is the host's, and a conforming implementation MAY provide a
 different backend for them.
+
+## 4.12 Mesh execution contract
+
+`Mesh.plan` and `Mesh.replay` (§6) are the published part of the execution plane.
+Their results are **deterministic functions of their arguments**, and that is a
+requirement, not an implementation detail:
+
+- Seeds derive from `BLAKE3(mesh_seed ‖ wave ‖ task_id ‖ attempt)`. An
+  implementation MUST NOT use a clock, an address, or a thread identity to derive
+  a seed, so the same plan produces the same values on any worker.
+- A wave checkpoint is a hash over the wave's committed results **sorted by task
+  id**. Two runs that finish in a different order MUST produce the same
+  checkpoint, otherwise `Mesh.replay` could not verify either of them.
+- `Mesh.replay` MUST fail on the first wave whose recorded checkpoint does not
+  recompute, and MUST refuse a journal that ends inside a wave. A replay that
+  matches most waves is a failed replay.
+
+Task classes carry requirements the planner enforces:
+
+- `pure` — re-executing MUST produce an identical result. At most 3 attempts.
+- `io` — MUST carry `idempotency_key`; a plan containing an `io` task without one
+  is refused. At most 2 attempts.
+- `llm` — never retried automatically and never re-executed during replay; the
+  recorded response is substituted. 1 attempt.
+
+Ordering inside a wave is the plan's input order, and `Mesh.plan` refuses a
+dependency cycle by naming its path (`a -> b -> a`), because "cycle" alone does
+not tell a reader which edge to cut.
+
+`Mesh.run` is NOT part of this revision. Executing a plan requires a worker pool
+that runs Tallow functions, and no such executor is specified here yet; an
+implementation MUST NOT accept a program that calls it.
