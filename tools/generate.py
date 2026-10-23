@@ -328,12 +328,16 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--engine", required=True)
     ap.add_argument("--repo", default=str(Path(__file__).resolve().parent.parent))
+    # Determinism: the generated date otherwise changes every midnight, so a
+    # freshness check would report a diff on a tree that is semantically
+    # identical. CI passes the date already recorded in generated.json.
+    ap.add_argument("--date", help="override the generation date (YYYY-MM-DD)")
     a = ap.parse_args()
     engine, repo = Path(a.engine), Path(a.repo)
     out = repo / "spec"
     out.mkdir(parents=True, exist_ok=True)
     sha = git_sha(engine)
-    date = subprocess.run(["date", "-u", "+%Y-%m-%d"], capture_output=True, text=True).stdout.strip()
+    date = a.date or subprocess.run(["date", "-u", "+%Y-%m-%d"], capture_output=True, text=True).stdout.strip()
 
     kws, toks = keywords(engine), tokens(engine)
     codes = error_codes(engine)

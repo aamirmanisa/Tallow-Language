@@ -1,0 +1,126 @@
+name: Spec freshness and conformance
+
+# The spec is generated from the engine, but until 2026-10-23 nothing checked
+# that it still matched. A stale `generated.json` was undetectable: the prose
+# and the counts could disagree with the shipped binary and still look green.
+#
+# Two guarantees, deliberately different:
+#   freshness — regenerating AT THE PINNED SHA reproduces the tree byte for
+#               byte (integrity: the spec is what the pin says it is).
+#   drift     — regenerating AT ENGINE MAIN produces the same CONTENT (surface
+#               counts and prose), ignoring the SHA and date. A pin that is
+#               merely behind warns; a changed surface fails.
+#   conformance — the published corpus runs green against the engine at the pin.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  schedule:
+    - cron: "17 5 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  freshness:
+    name: Regeneration reproduces the pinned tree
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Read the pinned engine SHA and date
+        id: pin
+        run: |
+          python3 - <<'PY'
+          import json, os
+          d = json.load(open("spec/generated.json"))
+          open(os.environ["GITHUB_OUTPUT"], "a").write(
+              f"sha={d['engine_sha']}\ndate={d['generated']}\n")
+          PY
+
+      - uses: actions/checkout@v4
+        with:
+          repository: aamirmanisa/tallowsphere
+          token: ${{ secrets.ENGINE_REPO_TOKEN }}
+          path: engine
+          fetch-depth: 1
+
+      - name: Check out the engine at the pinned commit
+        run: |
+          set -euo pipefail
+          git -C engine fetch --depth=1 origin "${{ steps.pin.outputs.sha }}"
+          git -C engine checkout --detach "${{ steps.pin.outputs.sha }}"
+          git -C engine rev-parse --short HEAD
+
+      - name: Regenerate and require a clean diff
+        run: |
+          set -euo pipefail
+          python3 tools/generate.py --engine engine --date "${{ steps.pin.outputs.date }}"
+          git diff --stat
+          git diff --exit-code || {
+            echo "::error::regenerating at the pinned SHA changed the spec — the pin, the generator or the documents disagree"
+            exit 1
+          }
+
+  drift:
+    name: Content matches engine main
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/checkout@v4
+        with:
+          repository: aamirmanisa/tallowsphere
+          token: ${{ secrets.ENGINE_REPO_TOKEN }}
+          path: engine
+          fetch-depth: 1
+
+      - name: Compare a fresh generation against the committed spec
+        run: python3 tools/check_drift.py --engine engine
+
+  conformance:
+    name: Conformance corpus against the pinned engine
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Read the pinned engine SHA
+        id: pin
+        run: |
+          python3 - <<'PY'
+          import json, os
+          d = json.load(open("spec/generated.json"))
+          open(os.environ["GITHUB_OUTPUT"], "a").write(f"sha={d['engine_sha']}\n")
+          PY
+
+      - uses: actions/checkout@v4
+        with:
+          repository: aamirmanisa/tallowsphere
+          token: ${{ secrets.ENGINE_REPO_TOKEN }}
+          path: engine
+          fetch-depth: 1
+
+      - name: Check out the engine at the pinned commit
+        run: |
+          set -euo pipefail
+          git -C engine fetch --depth=1 origin "${{ steps.pin.outputs.sha }}"
+          git -C engine checkout --detach "${{ steps.pin.outputs.sha }}"
+
+      - uses: dtolnay/rust-toolchain@stable
+
+      - name: Install the native link dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y clang liblzma-dev libbz2-dev
+
+      - name: Build the engine
+        working-directory: engine
+        run: cargo build --locked --bin tallow
+
+      - name: Run the corpus on both planes
+        run: python3 conformance/run.py --tallow engine/target/debug/tallow
