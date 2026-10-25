@@ -124,3 +124,49 @@ jobs:
 
       - name: Run the corpus on both planes
         run: python3 conformance/run.py --tallow engine/target/debug/tallow
+
+  feature-surfaces:
+    name: Opt-in surfaces (zk, fhe) against the pinned engine
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Read the pinned engine SHA
+        id: pin
+        run: |
+          python3 - <<'PY'
+          import json, os
+          d = json.load(open("spec/generated.json"))
+          open(os.environ["GITHUB_OUTPUT"], "a").write(f"sha={d['engine_sha']}\n")
+          PY
+
+      - uses: actions/checkout@v4
+        with:
+          repository: aamirmanisa/tallowsphere
+          path: engine
+          fetch-depth: 1
+
+      - name: Check out the engine at the pinned commit
+        run: |
+          set -euo pipefail
+          git -C engine fetch --depth=1 origin "${{ steps.pin.outputs.sha }}"
+          git -C engine checkout --detach "${{ steps.pin.outputs.sha }}"
+
+      - uses: dtolnay/rust-toolchain@stable
+
+      - name: Install the native link dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y clang liblzma-dev libbz2-dev
+
+      # The default-feature corpus covers the refusal (case 18) but never runs
+      # the opt-in surfaces. This job builds the engine with them and runs the
+      # cases that require each one.
+      - name: Build the engine with the opt-in features
+        working-directory: engine
+        run: cargo build --locked --bin tallow --features zk,fhe
+
+      - name: Run the corpus, including the feature cases
+        run: python3 conformance/run.py --tallow engine/target/debug/tallow --features zk,fhe
+

@@ -1,0 +1,8 @@
+{
+  "kind": "accept",
+  "stdout": "7\n",
+  "requires": "fhe",
+  "planes": [
+    "interpret"
+  ]
+}

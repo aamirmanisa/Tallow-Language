@@ -53,17 +53,40 @@ def agrees(expect: dict, got: dict) -> tuple[bool, str]:
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--tallow", required=True)
+    ap.add_argument("--only", default="", help="run only cases whose filename contains this text")
+    ap.add_argument("--features", default="", help="comma-separated engine features this binary was built with")
     ap.add_argument("--refresh", action="store_true",
                     help="rewrite expectations from the reference engine (both planes must agree)")
     a = ap.parse_args()
 
+    available = {f.strip() for f in a.features.split(",") if f.strip()}
     failures = 0
+    skipped = 0
+    ran = 0
     for program in sorted(CASES.glob("*.tl")):
+        if a.only and a.only not in program.name:
+            continue
         meta_path = program.with_suffix(".json")
-        results = {name: run_one(a.tallow, program, args) for name, args in PLANES}
+        meta = json.loads(meta_path.read_text())
+        needed = meta.get("requires")
+        if needed and needed not in available:
+            # The case needs an engine feature this binary does not have; the
+            # refusal itself is covered by its own case (kind: runtime).
+            skipped += 1
+            continue
+        absent = meta.get("requires_absent")
+        if absent and absent in available:
+            # The case asserts the refusal of a surface this binary HAS.
+            skipped += 1
+            continue
+        planes = [(n, args) for n, args in PLANES
+                  if n in meta.get("planes", ["interpret", "native"])]
+        ran += 1
+        results = {name: run_one(a.tallow, program, args) for name, args in planes}
 
         if a.refresh:
-            interp, native = results["interpret"], results["native"]
+            interp = results["interpret"]
+            native = results.get("native", interp)
             if interp["exit"] != native["exit"] or interp["stdout"] != native["stdout"]:
                 print(f"REFUSED {program.name}: planes disagree "
                       f"(interp exit {interp['exit']}, native exit {native['exit']})")
@@ -93,7 +116,7 @@ def main() -> int:
                 failures += 1
                 break
 
-    print(f"\n{failures} failure(s)")
+    print(f"\n{failures} failure(s), {ran} case(s) run, {skipped} skipped")
     return 1 if failures else 0
 
 
