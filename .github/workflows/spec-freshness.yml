@@ -41,10 +41,12 @@ jobs:
               f"sha={d['engine_sha']}\ndate={d['generated']}\n")
           PY
 
+      # tallowsphere is public, so no token is needed to read it. The previous
+      # `token: ${{ secrets.ENGINE_REPO_TOKEN }}` failed every run with
+      # "Input required and not supplied" because the secret was never set here.
       - uses: actions/checkout@v4
         with:
           repository: aamirmanisa/tallowsphere
-          token: ${{ secrets.ENGINE_REPO_TOKEN }}
           path: engine
           fetch-depth: 1
 
@@ -75,7 +77,6 @@ jobs:
       - uses: actions/checkout@v4
         with:
           repository: aamirmanisa/tallowsphere
-          token: ${{ secrets.ENGINE_REPO_TOKEN }}
           path: engine
           fetch-depth: 1
 
@@ -101,7 +102,6 @@ jobs:
       - uses: actions/checkout@v4
         with:
           repository: aamirmanisa/tallowsphere
-          token: ${{ secrets.ENGINE_REPO_TOKEN }}
           path: engine
           fetch-depth: 1
 
