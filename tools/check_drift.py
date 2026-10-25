@@ -51,7 +51,7 @@ def main() -> int:
     current = json.loads((repo / "spec" / "generated.json").read_text())
     current_sha = current.get("engine_sha", "")
     engine_sha = subprocess.run(
-        ["git", "-C", str(engine), "rev-parse", "--short", "HEAD"],
+        ["git", "-C", str(engine), "rev-parse", "HEAD"],
         capture_output=True, text=True, check=True).stdout.strip()
 
     with tempfile.TemporaryDirectory() as tmp:
@@ -68,7 +68,12 @@ def main() -> int:
                 print(f"  {k}: spec {current.get(k)} -> engine {fresh.get(k)}")
             return 1
 
+        # Generated docs name the engine with a SHORT sha; normalize every
+        # abbreviation of both pins, or a pin-only move reads as content drift.
         shas = {current_sha, engine_sha}
+        for sha in list(shas):
+            if sha:
+                shas.update({sha[:7], sha[:8], sha[:12]})
         doc_diffs = []
         for f in sorted((tmp_repo / "spec").glob("*.md")):
             target = repo / "spec" / f.name
@@ -84,10 +89,10 @@ def main() -> int:
             return 1
 
     if current_sha != engine_sha:
-        print(f"PIN: spec pinned at {current_sha or 'unknown'}, engine at {engine_sha} — "
+        print(f"PIN: spec pinned at {current_sha or 'unknown'}, engine at {engine_sha[:7]} — "
               f"content identical, regenerate to refresh the pin")
         return 0
-    print(f"OK: spec matches engine {engine_sha} ({current.get('stdlib_modules')} modules, "
+    print(f"OK: spec matches engine {engine_sha[:7]} ({current.get('stdlib_modules')} modules, "
           f"{current.get('stdlib_fns')} functions)")
     return 0
 
