@@ -122,7 +122,7 @@ ok   tutorial/programs/01-hello.tl
 10 program(s), 0 failure(s)
 ```
 
-[measured 2026-10-25 · `tallow 1.5.7` · tutorial, example and script programs: 10 run, 0 failures, both planes identical]
+[measured 2026-10-26 · `tallow 1.5.8` · tutorial, example and script programs: 10 run, 0 failures, both planes identical]
 
 ## Read it
 
