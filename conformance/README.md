@@ -3,13 +3,13 @@
 A specification that nobody tests is an opinion. This directory is the part of the repository
 that can disagree with the compiler.
 
-Twenty-one programs, each paired with a recorded expectation, each run on both execution
+Twenty-two programs, each paired with a recorded expectation, each run on both execution
 planes. A case passes only when the interpreter **and** the compiler produce what the
 expectation says — a plane that silently diverges fails the suite, not the user.
 
 ```console
 $ python3 conformance/run.py --tallow /path/to/tallow
-0 failure(s), 19 case(s) run, 2 skipped
+0 failure(s), 20 case(s) run, 2 skipped
 ```
 
 ## The pair

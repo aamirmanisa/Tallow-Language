@@ -11,7 +11,7 @@
 <sub><a href="#learn-it">Learn it</a> &nbsp;·&nbsp; <a href="#read-it">Read the spec</a> &nbsp;·&nbsp; <a href="#verify-an-implementation">Verify an engine</a> &nbsp;·&nbsp; <a href="#install">Install</a> &nbsp;·&nbsp; <a href="#what-is-in-here">Repository map</a></sub>
 
 ![specification 00–06 · normative](https://img.shields.io/badge/specification-00%E2%80%9306%20normative-E39B3E?style=flat-square&labelColor=171513)
-![conformance 21 cases](https://img.shields.io/badge/conformance-21%20cases-E39B3E?style=flat-square&labelColor=171513)
+![conformance 21 cases](https://img.shields.io/badge/conformance-22%20cases-E39B3E?style=flat-square&labelColor=171513)
 ![error catalogue 176 codes](https://img.shields.io/badge/error%20catalogue-176%20codes-E39B3E?style=flat-square&labelColor=171513)
 ![licence CC BY 4.0 + MIT](https://img.shields.io/badge/licence-CC%20BY%204.0%20%2B%20MIT-6E675D?style=flat-square&labelColor=171513)
 [![spec freshness and conformance](https://github.com/aamirmanisa/Tallow-Language/actions/workflows/spec-freshness.yml/badge.svg)](https://github.com/aamirmanisa/Tallow-Language/actions/workflows/spec-freshness.yml)
@@ -138,7 +138,7 @@ The specification is normative, in reading order:
 | [05 · Errors](spec/05-errors.md) | The error model and the code catalogue |
 | [06 · Standard library](spec/06-stdlib.md) | Declared surface and contracts |
 
-The error catalogue is enumerated, not illustrative: **176 distinct `E…` codes** [measured 2026-10-25]. A diagnostic you cannot look up is a diagnostic you cannot fix.
+The error catalogue is enumerated, not illustrative: **176 distinct `E…` codes** [measured 2026-10-26, regenerated at `a8921c3`]. A diagnostic you cannot look up is a diagnostic you cannot fix.
 
 Most of `06-stdlib.md` is generated from the engine at a pinned commit — `spec/generated.json` records the sha and the date. `tools/check_drift.py` fails when regenerating against engine `main` changes the content, so prose and surface counts cannot drift apart quietly.
 
@@ -148,10 +148,10 @@ The conformance suite is the arbiter:
 
 ```console
 $ python3 conformance/run.py --tallow /path/to/tallow
-0 failure(s), 19 case(s) run, 2 skipped
+0 failure(s), 20 case(s) run, 2 skipped
 ```
 
-[measured 2026-10-25 · `tallow 1.5.7` · the two skipped cases exercise the opt-in `zk` and `fhe` surfaces; `--features zk,fhe` runs them]
+[measured 2026-10-26 · engine `main` at `a8921c3` · the two skipped cases exercise the opt-in `zk` and `fhe` surfaces; `--features zk,fhe` runs them]
 
 Every case in `conformance/cases/` is a `.tl` program paired with the exact stdout and exit status the reference engine produced:
 
@@ -177,7 +177,7 @@ assets/         hero and diagram sources (SVG) plus the rendered PNGs
 spec/           the normative specification, in reading order
 tutorial/       six chapters plus tutorial/programs/ — every one runnable
 examples/       complete programs (fizzbuzz, optionals, enums, scripts/wc.tl, scripts/todo.tl)
-conformance/    cases/ (21 programs + recorded expectations), findings/, run.py
+conformance/    cases/ (22 programs + recorded expectations), findings/, run.py
 install/        install.sh and packaging notes
 tools/          generate.py — regenerates generated spec sections from the engine
 ```
