@@ -34,8 +34,9 @@ branch; `if 1` takes the true branch.)*
 - Remainder takes the sign of the dividend: `-7 % 3` is `-1`.
 - `**` is right-associative: `2 ** 3 ** 2` is `512`.
 - `*`, `/`, `%` bind tighter than `+`, `-`; `1 + 2 * 3` is `7`.
-- `+` is numeric only. `"a" + 1` is **E0110**; string assembly is interpolation
-  (`"value {x}"`) or the standard library's helpers.
+- `+` is numeric, with one exception: two `String` operands concatenate
+  (`"a" + "b"` is `ab` on both planes). A string with a non-string operand is
+  **E0110** (`"a" + 1`). Interpolation (`"value {x}"`) is the idiomatic form.
 - Overflow behaviour at the integer widths is the reference implementation's: it does not
   trap in release builds. Programs that depend on wrapping are not portable and SHOULD use
   explicit conversions.
@@ -48,8 +49,8 @@ an absent optional as `nil` — the constructor is visible, not stripped.
 *(reference: verified — `print("v={r}")` with `r = Ok(7)` prints `v=Ok(7)`; `print("o={o}")`
 with `o: i64? = nil` prints `o=nil`.)*
 
-`+` never concatenates strings: both operands must be numeric (E0110). String assembly is
-interpolation, or the standard library's helpers.
+`+` concatenates when both operands are `String`, and is numeric otherwise; a string mixed
+with a non-string operand is E0110. String assembly is usually written as interpolation.
 
 ## 4.5 Optionals and Result propagation
 

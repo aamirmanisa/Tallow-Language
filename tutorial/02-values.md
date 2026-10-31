@@ -28,9 +28,10 @@ true
 
 Three things worth noticing:
 
-- `{name}` interpolates inside a string literal. There is no `+` for strings —
-  concatenation is interpolation, and the type checker rejects `"a" + "b"`
-  (`E0110`) rather than guessing what you meant.
+- `{name}` interpolates inside a string literal, and that is the idiomatic way to
+  build one. `+` on two strings concatenates (`"a" + "b"` is `ab`, both planes);
+  it is not the recommended style, and mixing a string with a non-string operand
+  is `E0110` (`"a" + 1`).
 - `2026 / 2` is integer division: `1013`. Use `f64` when you want a fraction.
 - `print` renders each type the way the type is written: `true`, not `1`.
 
