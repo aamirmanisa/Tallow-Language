@@ -49,7 +49,7 @@ Type         = NamedType | GenericType | SliceType | OptionalType
              | TupleType | RecordType | FnType | BoxedType | ImplType | DynType ;
 NamedType    = Path ;
 GenericType  = Path "<" Type { "," Type } ">" ;
-SliceType    = "[" Type "]" | "[]" Type ;
+SliceType    = "[]" Type ;
 OptionalType = Type "?" ;
 TupleType    = "(" Type { "," Type } ")" ;
 RecordType   = "{" [ RecordField { "," RecordField } ] "}" ;
@@ -60,7 +60,9 @@ ImplType     = "impl" Ident ;
 DynType      = "dyn" Ident ;
 ```
 
-`[]T` and `[T]` are the same slice type; `T?` is optional. A `RecordType` is an
+`[]T` is the slice type — the spelling is prefix, not the `[T]` of a fixed-size
+array. `fn f(x: [i64])` is a parse error (`expected ']', found 'i64'`), measured on
+the 1.6.0 engine; `fn f(x: []i64)` checks. `T?` is optional. A `RecordType` is an
 anonymous inline shape — `{a: Int, b: String}` — used where naming a struct
 would add nothing (result shapes in declarations). It carries field names for
 readers; the type checker erases it to a tuple of its field types. `{T, U}` is
