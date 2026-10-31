@@ -81,7 +81,10 @@ Slices are the only sequence type; there is no fixed-size array type. `[]T` may 
 standard library, with three language-level affordances:
 
 - `bail expr` constructs an `Err` and returns it from the enclosing function, whose return
-  type MUST be a `Result`.
+  type MUST be a `Result` — **E0126** otherwise. The parser desugars `bail expr` to
+  `return Err(expr)`, so an explicit `return Err(..)` from a non-`Result` function is the
+  same error: measured on 1.6.0, both spellings report
+  `error[E0126]: bail requires the enclosing function to return Result<T>, found i64`.
 - The `?` postfix operator propagates: on `Err` it returns from the enclosing function with
   that error; on `Ok` it yields the payload.
 - `match` on a `Result` uses variant patterns `Ok(x)` / `Err(e)`.
