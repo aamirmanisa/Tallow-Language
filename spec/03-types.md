@@ -23,8 +23,11 @@ type `f64`. A name that is not a built-in and not declared in scope produces **W
 not an error, so a typo in a type position does not silently change behaviour without a
 diagnostic.
 
-The names `Int` and `Float` used in the standard library's declaration files are **not**
-language types: user code that writes `fn f(x: Int)` gets W0100. Use `i64` / `f64`.
+`Int` and `Float` are language type names, not only manifest spellings: `Int` is a
+128-bit integer and `Float` is `f64`, matching the literal types in §1. User code may
+write `fn f(x: Int)` and it resolves — it no longer earns a W0100, and the stdlib
+declaration files use the same names. Use `i64` / `f64` when you mean those widths
+specifically.
 
 ## 3.2 Composite types
 

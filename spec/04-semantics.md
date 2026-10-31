@@ -172,9 +172,17 @@ Ordering inside a wave is the plan's input order, and `Mesh.plan` refuses a
 dependency cycle by naming its path (`a -> b -> a`), because "cycle" alone does
 not tell a reader which edge to cut.
 
-`Mesh.run` is NOT part of this revision. Executing a plan requires a worker pool
-that runs Tallow functions, and no such executor is specified here yet; an
-implementation MUST NOT accept a program that calls it.
+`Mesh.run` is part of this revision:
+
+```tallow
+native fn run(tasks: []MeshTask, workers: i64, journal: String, seed: i64) -> MeshRun
+```
+
+It executes the functions the calling program names, with the worker count given,
+appending to the journal path. The earlier text said it was not part of the
+revision and that an implementation must refuse a program calling it; the engine
+has accepted and executed it since the mesh execution plane landed, so the
+statement was stale rather than a rule being broken.
 
 ## 4.13 Name resolution: variables shadow modules
 
