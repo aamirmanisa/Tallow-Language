@@ -108,7 +108,7 @@ cannot be used as identifiers. `_` is reserved as a pattern wildcard.
 
 - **Int**: decimal digits, with `_` separators; an `i128` internally.
 - **Float**: digits with a `.` and/or exponent; `f64`.
-- **String**: double-quoted, with `\n`, `\t`, `\r`, `\\`, `\"`, `\0`, `\xHH` escapes.
+- **String**: double-quoted, with `\n`, `\t`, `\r`, `\\`, `\"`, `\0`, `\{`, `\}` escapes. Any other sequence is rejected at lex time — `\xHH` is **not** available and reports `error: invalid escape: \x` (measured against the 1.6.0 engine).
 - **Interpolated string**: `"text {expr} more"` compiles to StringStart/StringMid/StringEnd
   tokens; the lexer, not the parser, splits it.
 - **Bool**: `true`, `false`. **Nil**: `nil`.
