@@ -105,8 +105,9 @@ LoopStmt     = "loop" Block ;
 DeferStmt    = "defer" Block ;
 ```
 
-`let` binds immutably; `var` binds mutably; `const` is an item, not a statement, and MUST
-carry a type and an initialiser.
+`let` binds immutably; `var` binds mutably; `const` is an item, not a statement. It MUST
+carry an initialiser (`const Y` alone is `expected '=', found ...`), and the type annotation
+is optional: `const X = 1` infers from the initialiser, `const Z: i64 = 3` states it.
 
 ## 2.4 Expressions
 
