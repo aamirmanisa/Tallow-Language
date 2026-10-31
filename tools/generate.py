@@ -6,7 +6,7 @@ published spec cannot claim a keyword, an operator, an error code or a stdlib
 signature the engine does not have. Prose chapters (00, 02, 03, 04) are authored by
 hand and never touched here.
 
-    python3 tools/generate.py --engine /home/aamir/tallowsphere
+    python3 tools/generate.py --engine /path/to/tallowsphere
 """
 from __future__ import annotations
 
