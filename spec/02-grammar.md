@@ -15,9 +15,12 @@ Decorator    = "@" Ident "(" ArgumentList ")" ;
 ```
 
 Eight item kinds exist: `Fn`, `Struct`, `Enum`, `Impl`, `Trait`, `Const`, `TypeAlias`,
-`Import`. Decorators attach to the item that follows them; `@legal(...)` and
-`@agent_task(...)` are checked by dedicated passes (§4.9), and an unknown decorator is a
-compile error rather than an annotation that is silently ignored.
+`Import`. Decorators attach to the item that follows them and are parsed generically:
+`@legal(...)` and `@agent_task(...)` are checked by dedicated passes (§4.9), while a
+decorator no pass recognises is accepted and has no effect. Measured on the 1.6.0 engine,
+`@no_such_decorator(x: 1) fn main() { print(1) }` reports `check passed: 1 items, 0
+warning(s)` and runs — this is not a typo check, so a misspelling of an enforced
+annotation is caught only where a pass requires that annotation by name.
 
 ```
 FnDecl       = [ "native" ] "fn" Ident "(" [ Param { "," Param } ] ")" [ "->" Type ]
