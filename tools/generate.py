@@ -35,14 +35,17 @@ def git_sha(engine: Path) -> str:
 
 def keywords(engine: Path) -> list[tuple[str, str]]:
     src = (engine / "src/lexer.rs").read_text()
-    start = src.index('"let" => TokenKind::Let')
+    # Start at the match itself, not at one of its arms. Anchoring on
+    # `"let" => TokenKind::Let` silently dropped every keyword matched before it
+    # (`fn` was missing from the published table), and appending `_` by hand
+    # duplicated the row the lexer already has.
+    start = src.index("let kind = match text {")
     end = src.index("}", start)
     block = src[start:end]
-    out = []
+    out: list[tuple[str, str]] = []
     for word, tok in re.findall(r'"([a-z_][a-z0-9_]*)"\s*=>\s*TokenKind::(\w+)', block):
-        out.append((word, tok))
-    # `_` is matched separately in the lexer, not through the keyword table.
-    out.append(("_", "Underscore"))
+        if (word, tok) not in out:
+            out.append((word, tok))
     return out
 
 
