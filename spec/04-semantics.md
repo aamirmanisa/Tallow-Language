@@ -172,17 +172,21 @@ Ordering inside a wave is the plan's input order, and `Mesh.plan` refuses a
 dependency cycle by naming its path (`a -> b -> a`), because "cycle" alone does
 not tell a reader which edge to cut.
 
-`Mesh.run` is part of this revision:
+`Mesh.run`, `Mesh.plan` and `Mesh.replay` are declared in the standard library
+(`stdlib/mesh.tl`) and are **not implemented** in this build: executing a plan
+requires a worker pool that runs Tallow functions, and the interpreter does not
+provide one yet. A call refuses by name:
 
-```tallow
-native fn run(tasks: []MeshTask, workers: i64, journal: String, seed: i64) -> MeshRun
+```
+mesh.run: declared in stdlib/mesh.tl and NOT implemented in this build — executing
+a plan needs a worker pool that runs Tallow functions, which the interpreter does
+not provide yet; use the declaration for type checking only
 ```
 
-It executes the functions the calling program names, with the worker count given,
-appending to the journal path. The earlier text said it was not part of the
-revision and that an implementation must refuse a program calling it; the engine
-has accepted and executed it since the mesh execution plane landed, so the
-statement was stale rather than a rule being broken.
+An earlier revision of this section said the opposite in each direction — first that
+`Mesh.run` was not part of the revision and that an implementation MUST refuse it,
+then that it existed. Measured 2026-11-01: the declaration exists and the runtime
+refuses. The declaration is real, the executor is not.
 
 ## 4.13 Name resolution: variables shadow modules
 
