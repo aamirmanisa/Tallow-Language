@@ -5,7 +5,7 @@
 ```sh
 ./install.sh --prefix ~/.local          # or: curl … | sh
 ./install.sh                 # latest release
-./install.sh --from tallow-linux-aarch64-1.1.4.tar.gz
+./install.sh --from tallow-linux-aarch64-1.7.0.tar.gz
 ```
 
 ## What it installs, and why two files
