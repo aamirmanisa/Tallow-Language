@@ -66,7 +66,18 @@ with a non-string operand is E0110. String assembly is usually written as interp
 
 A block `{ … }` is an expression: its value is the trailing expression if present, otherwise
 `nil`. Bindings introduced in a block are not visible outside it. `var` bindings are mutable
-throughout their scope, and mutation is visible to closures that captured them *(reference)*.
+throughout their scope.
+
+**Closures capture at creation time, by snapshot.** A closure value copies the bindings it
+references when it is created; assigning to one of those bindings inside the closure changes
+the closure's own copy and does not propagate back to the enclosing binding. The closure's
+captured state persists across calls, so a counter held inside a closure does work — it just
+is not the enclosing variable. This is normative: both engines behave this way, and
+`closure_snapshot_semantics` in the implementation pins it.
+
+Consequence worth stating, because it is the common surprise: an accumulator written as
+`nums.each { n -> total = total + n }` leaves `total` unchanged. Accumulate through the value
+the expression returns (`reduce`) rather than by assigning to a captured `var`.
 
 `defer { … }` schedules the block to run when the enclosing scope exits, in last-in,
 first-out order, including on `return`, `bail` and error propagation. A `defer` inside a loop
