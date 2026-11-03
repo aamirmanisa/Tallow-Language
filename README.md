@@ -17,6 +17,9 @@
 [![spec freshness and conformance](https://github.com/aamirmanisa/Tallow-Language/actions/workflows/spec-freshness.yml/badge.svg)](https://github.com/aamirmanisa/Tallow-Language/actions/workflows/spec-freshness.yml)
 
 </div>
+> **Scope:** this repository describes a language for command-line programs. It ships a
+> compiler, a runtime, a spec and a conformance corpus — no GUI, no desktop application.
+
 
 ---
 
