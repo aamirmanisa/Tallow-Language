@@ -125,7 +125,7 @@ ok   tutorial/programs/01-hello.tl
 10 program(s), 0 failure(s)
 ```
 
-[measured 2026-11-02 · `tallow 1.7.0` · tutorial, example and script programs: 10 run, **1 failure** — `examples/scripts/wc.tl` counts 3 lines on the compiled plane and 2 in the interpreter for a two-line fixture, both exiting 0. A second divergence found the same day is not covered by the harness at all: indexing a literal array-of-arrays prints the wrong element on the compiled plane (`[[10,20],[30,40]][1][0]` → 30 interpreted, 0 native). Both are recorded under `conformance/findings/`, not `conformance/cases/` — a case asserts that the planes agree, and here they do not]
+[measured 2026-11-03 · `tallow 1.7.1` · tutorial, example and script programs: 10 run, **1 failure** — `examples/scripts/wc.tl` counts 3 lines on the compiled plane and 2 in the interpreter for a two-line fixture, both exiting 0. A second divergence found the same day is not covered by the harness at all: indexing a literal array-of-arrays prints the wrong element on the compiled plane (`[[10,20],[30,40]][1][0]` → 30 interpreted, 0 native). Both are unchanged from 1.7.0 and both are 1.8 items; they are recorded under `conformance/findings/`, not `conformance/cases/` — a case asserts that the planes agree, and here they do not]
 
 ## Read it
 
